@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Component } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import apiKeys from "./apiKeys";
 import ReactAnimatedWeather from "react-animated-weather";
@@ -8,30 +8,42 @@ function Forcast(props) {
   const [error, setError] = useState("");
   const [weather, setWeather] = useState({});
 
-  const search = (city) => {
+  const search = (location) => {
+    const isPincode = /^\d{5}(?:[-\s]\d{4})?$/.test(location);
+    const searchParam = isPincode
+      ? `zip=${location},us`
+      : `q=${location}`;
+
     axios
       .get(
-        `${apiKeys.base}weather?q=${
-          city != "[object Object]" ? city : query
-        }&units=metric&APPID=${apiKeys.key}`
+        `${apiKeys.base}weather?${searchParam}&units=metric&APPID=${apiKeys.key}`
       )
       .then((response) => {
         setWeather(response.data);
         setQuery("");
+        setError("");
       })
-      .catch(function (error) {
+      .catch((error) => {
         console.log(error);
         setWeather("");
         setQuery("");
-        setError({ message: "Not Found", query: query });
+        setError({ message: "Not Found", query: location });
       });
   };
-  function checkTime(i) {
-    if (i < 10) {
-      i = "0" + i;
-    } // add zero in front of numbers < 10
-    return i;
-  }
+
+  const handleSearch = () => {
+    if (query.trim() !== "") {
+      search(query);
+    }
+  };
+
+  const handleKeyPress = (event) => {
+    console.log("Key pressed:", event.key); // Log the pressed key
+    if (event.key === "Enter") {
+      console.log("Enter key pressed");
+      handleSearch();
+    }
+  };
 
   const defaults = {
     color: "white",
@@ -59,22 +71,22 @@ function Forcast(props) {
           <input
             type="text"
             className="search-bar"
-            placeholder="Search any city"
+            placeholder="Search by city name or pincode"
             onChange={(e) => setQuery(e.target.value)}
+            onKeyPress={handleKeyPress} // Handle Enter key press
             value={query}
           />
           <div className="img-box">
-            {" "}
             <img
               src="https://images.avishkaar.cc/workflow/newhp/search-white.png"
-              onClick={search}
+              onClick={handleSearch}
+              alt="search-icon"
             />
           </div>
         </div>
         <ul>
-          {typeof weather.main != "undefined" ? (
+          {typeof weather.main !== "undefined" ? (
             <div>
-              {" "}
               <li className="cityHead">
                 <p>
                   {weather.name}, {weather.sys.country}
@@ -82,6 +94,7 @@ function Forcast(props) {
                 <img
                   className="temp"
                   src={`https://openweathermap.org/img/wn/${weather.weather[0].icon}.png`}
+                  alt="weather-icon"
                 />
               </li>
               <li>
@@ -119,4 +132,5 @@ function Forcast(props) {
     </div>
   );
 }
+
 export default Forcast;
